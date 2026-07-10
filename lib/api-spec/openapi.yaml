@@ -3,20 +3,29 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SkyReserve Flight Booking Management System API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: me
+  - name: airlines
+  - name: flights
+  - name: customers
+  - name: bookings
+  - name: passengers
+  - name: paymentMethods
+  - name: wishlist
+  - name: notifications
+  - name: admin
+  - name: db
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +33,1128 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [me]
+      summary: Get current customer profile (auto-provisions on first call)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+    patch:
+      operationId: updateMe
+      tags: [me]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+
+  /airlines:
+    get:
+      operationId: listAirlines
+      tags: [airlines]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Airline" }
+    post:
+      operationId: createAirline
+      tags: [airlines]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AirlineInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Airline" }
+
+  /airlines/{id}:
+    get:
+      operationId: getAirline
+      tags: [airlines]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Airline" }
+        "404": { description: Not found }
+    patch:
+      operationId: updateAirline
+      tags: [airlines]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AirlineUpdate" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Airline" }
+    delete:
+      operationId: deleteAirline
+      tags: [airlines]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "204": { description: Deleted }
+
+  /airlines/{id}/stats:
+    get:
+      operationId: getAirlineStats
+      tags: [airlines]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AirlineStats" }
+
+  /flights:
+    get:
+      operationId: listFlights
+      tags: [flights]
+      parameters:
+        - { name: origin, in: query, schema: { type: string } }
+        - { name: destination, in: query, schema: { type: string } }
+        - { name: date, in: query, schema: { type: string } }
+        - { name: cabinClass, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: airlineId, in: query, schema: { type: integer } }
+        - { name: minSeats, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Flight" }
+    post:
+      operationId: createFlight
+      tags: [flights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FlightInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Flight" }
+
+  /flights/{id}:
+    get:
+      operationId: getFlight
+      tags: [flights]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Flight" }
+        "404": { description: Not found }
+    patch:
+      operationId: updateFlight
+      tags: [flights]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FlightUpdate" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Flight" }
+    delete:
+      operationId: deleteFlight
+      tags: [flights]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "204": { description: Deleted }
+
+  /flights/{id}/seats:
+    get:
+      operationId: getFlightSeatMap
+      tags: [flights]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Seat" }
+
+  /customers:
+    get:
+      operationId: listCustomers
+      tags: [customers]
+      parameters:
+        - { name: search, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Customer" }
+
+  /customers/{id}:
+    get:
+      operationId: getCustomer
+      tags: [customers]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Customer" }
+    patch:
+      operationId: updateCustomer
+      tags: [customers]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CustomerAdminUpdate" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Customer" }
+    delete:
+      operationId: deleteCustomer
+      tags: [customers]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "204": { description: Deleted }
+
+  /customers/{id}/bookings:
+    get:
+      operationId: getCustomerBookings
+      tags: [customers]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Booking" }
+
+  /bookings:
+    get:
+      operationId: listBookings
+      tags: [bookings]
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string } }
+        - { name: all, in: query, schema: { type: boolean } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Booking" }
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookingInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "409": { description: Seat already booked }
+
+  /bookings/{id}:
+    get:
+      operationId: getBooking
+      tags: [bookings]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+    patch:
+      operationId: updateBooking
+      tags: [bookings]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookingUpdate" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+
+  /bookings/{id}/cancel:
+    post:
+      operationId: cancelBooking
+      tags: [bookings]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+
+  /bookings/{id}/ticket:
+    get:
+      operationId: getBookingTicket
+      tags: [bookings]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ticket" }
+
+  /passengers:
+    get:
+      operationId: listPassengers
+      tags: [passengers]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SavedPassenger" }
+    post:
+      operationId: createPassenger
+      tags: [passengers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SavedPassengerInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SavedPassenger" }
+
+  /passengers/{id}:
+    patch:
+      operationId: updatePassenger
+      tags: [passengers]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SavedPassengerInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SavedPassenger" }
+    delete:
+      operationId: deletePassenger
+      tags: [passengers]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "204": { description: Deleted }
+
+  /payment-methods:
+    get:
+      operationId: listPaymentMethods
+      tags: [paymentMethods]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PaymentMethod" }
+    post:
+      operationId: createPaymentMethod
+      tags: [paymentMethods]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentMethodInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentMethod" }
+
+  /payment-methods/{id}:
+    delete:
+      operationId: deletePaymentMethod
+      tags: [paymentMethods]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "204": { description: Deleted }
+
+  /wishlist:
+    get:
+      operationId: listWishlist
+      tags: [wishlist]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/WishlistItem" }
+    post:
+      operationId: createWishlistItem
+      tags: [wishlist]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WishlistInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WishlistItem" }
+
+  /wishlist/{id}:
+    delete:
+      operationId: deleteWishlistItem
+      tags: [wishlist]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "204": { description: Deleted }
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Notification" }
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Notification" }
+
+  /notifications/read-all:
+    patch:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      responses:
+        "204": { description: OK }
+
+  /admin/dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [admin]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DashboardSummary" }
+
+  /admin/analytics/revenue:
+    get:
+      operationId: getRevenueAnalytics
+      tags: [admin]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RevenuePoint" }
+
+  /admin/analytics/occupancy:
+    get:
+      operationId: getOccupancyAnalytics
+      tags: [admin]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/OccupancyPoint" }
+
+  /admin/analytics/top-customers:
+    get:
+      operationId: getTopCustomers
+      tags: [admin]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TopCustomer" }
+
+  /admin/analytics/top-flights:
+    get:
+      operationId: getTopFlights
+      tags: [admin]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TopFlight" }
+
+  /admin/analytics/airlines:
+    get:
+      operationId: getAirlineComparison
+      tags: [admin]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AirlineComparison" }
+
+  /admin/activity:
+    get:
+      operationId: getActivityFeed
+      tags: [admin]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ActivityEvent" }
+
+  /db/triggers/logs:
+    get:
+      operationId: listTriggerLogs
+      tags: [db]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TriggerLog" }
+
+  /db/procedures:
+    get:
+      operationId: listProcedures
+      tags: [db]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ProcedureDefinition" }
+
+  /db/procedures/{name}/execute:
+    post:
+      operationId: executeProcedure
+      tags: [db]
+      parameters:
+        - { name: name, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProcedureExecutionInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProcedureExecutionResult" }
+
+  /db/procedures/executions:
+    get:
+      operationId: listProcedureExecutions
+      tags: [db]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ProcedureExecutionResult" }
+
+  /db/views/daily-schedule:
+    get:
+      operationId: getDailyFlightScheduleView
+      tags: [db]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Flight" }
+
+  /db/views/confirmed-bookings:
+    get:
+      operationId: getConfirmedBookingsView
+      tags: [db]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ConfirmedBookingRow" }
+
+  /db/views/occupancy-summary:
+    get:
+      operationId: getOccupancySummaryView
+      tags: [db]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/OccupancySummaryRow" }
+
+  /db/queries:
+    get:
+      operationId: listQueryDefinitions
+      tags: [db]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/QueryDefinition" }
+
+  /db/queries/{id}/execute:
+    post:
+      operationId: executeQuery
+      tags: [db]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QueryResult" }
+
 components:
   schemas:
     HealthStatus:
       type: object
       properties:
-        status:
-          type: string
-      required:
-        - status
+        status: { type: string }
+      required: [status]
 
+    Airline:
+      type: object
+      required: [id, name, country]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        country: { type: string }
+        logoUrl: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    AirlineInput:
+      type: object
+      required: [name, country]
+      properties:
+        name: { type: string, minLength: 1 }
+        country: { type: string, minLength: 1 }
+        logoUrl: { type: string }
+
+    AirlineUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        country: { type: string, minLength: 1 }
+        logoUrl: { type: string }
+
+    AirlineStats:
+      type: object
+      required: [airlineId, fleetSize, activeFlights, totalBookings, totalRevenue]
+      properties:
+        airlineId: { type: integer }
+        fleetSize: { type: integer }
+        activeFlights: { type: integer }
+        totalBookings: { type: integer }
+        totalRevenue: { type: number }
+
+    Flight:
+      type: object
+      required: [id, airlineId, airlineName, departure, arrival, departureTime, arrivalTime, status, aircraft, totalSeats, availableSeats, basePrice, durationMinutes]
+      properties:
+        id: { type: integer }
+        airlineId: { type: integer }
+        airlineName: { type: string }
+        flightNumber: { type: string }
+        departure: { type: string }
+        arrival: { type: string }
+        departureTime: { type: string }
+        arrivalTime: { type: string }
+        status: { type: string }
+        aircraft: { type: string }
+        totalSeats: { type: integer }
+        availableSeats: { type: integer }
+        basePrice: { type: number }
+        durationMinutes: { type: integer }
+
+    FlightInput:
+      type: object
+      required: [airlineId, departure, arrival, departureTime, arrivalTime, aircraft, totalSeats, basePrice]
+      properties:
+        airlineId: { type: integer }
+        flightNumber: { type: string }
+        departure: { type: string, minLength: 1 }
+        arrival: { type: string, minLength: 1 }
+        departureTime: { type: string }
+        arrivalTime: { type: string }
+        status: { type: string }
+        aircraft: { type: string, minLength: 1 }
+        totalSeats: { type: integer }
+        basePrice: { type: number }
+
+    FlightUpdate:
+      type: object
+      properties:
+        airlineId: { type: integer }
+        flightNumber: { type: string }
+        departure: { type: string }
+        arrival: { type: string }
+        departureTime: { type: string }
+        arrivalTime: { type: string }
+        status: { type: string }
+        aircraft: { type: string }
+        totalSeats: { type: integer }
+        basePrice: { type: number }
+
+    Seat:
+      type: object
+      required: [id, flightId, seatNumber, cabinClass, status]
+      properties:
+        id: { type: integer }
+        flightId: { type: integer }
+        seatNumber: { type: string }
+        cabinClass: { type: string }
+        status: { type: string }
+
+    Customer:
+      type: object
+      required: [id, name, email, phone, role]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        role: { type: string }
+        avatarUrl: { type: ["string", "null"] }
+        darkModePref: { type: boolean }
+        notifyEmail: { type: boolean }
+        notifySms: { type: boolean }
+        createdAt: { type: string }
+
+    CustomerUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        phone: { type: string }
+        avatarUrl: { type: string }
+        darkModePref: { type: boolean }
+        notifyEmail: { type: boolean }
+        notifySms: { type: boolean }
+
+    CustomerAdminUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        phone: { type: string }
+        role: { type: string }
+
+    Booking:
+      type: object
+      required: [id, customerId, customerName, flightId, bookingDate, seatNumber, cabinClass, status, price, bookingReference, flight]
+      properties:
+        id: { type: integer }
+        customerId: { type: integer }
+        customerName: { type: string }
+        flightId: { type: integer }
+        bookingDate: { type: string }
+        seatNumber: { type: string }
+        cabinClass: { type: string }
+        status: { type: string }
+        price: { type: number }
+        bookingReference: { type: string }
+        passengerName: { type: string }
+        passengerEmail: { type: string }
+        passengerPhone: { type: string }
+        flight: { $ref: "#/components/schemas/Flight" }
+
+    BookingInput:
+      type: object
+      required: [flightId, seatNumber, cabinClass, passengerName, passengerEmail, passengerPhone]
+      properties:
+        flightId: { type: integer }
+        seatNumber: { type: string, minLength: 1 }
+        cabinClass: { type: string, minLength: 1 }
+        passengerName: { type: string, minLength: 1 }
+        passengerEmail: { type: string, minLength: 1 }
+        passengerPhone: { type: string, minLength: 1 }
+        paymentMethodId: { type: integer }
+
+    BookingUpdate:
+      type: object
+      properties:
+        seatNumber: { type: string }
+        status: { type: string }
+        cabinClass: { type: string }
+
+    Ticket:
+      type: object
+      required: [bookingId, bookingReference, passengerName, flight, seatNumber, cabinClass, qrPayload, status]
+      properties:
+        bookingId: { type: integer }
+        bookingReference: { type: string }
+        passengerName: { type: string }
+        flight: { $ref: "#/components/schemas/Flight" }
+        seatNumber: { type: string }
+        cabinClass: { type: string }
+        qrPayload: { type: string }
+        status: { type: string }
+
+    SavedPassenger:
+      type: object
+      required: [id, customerId, fullName, email, phone]
+      properties:
+        id: { type: integer }
+        customerId: { type: integer }
+        fullName: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        passportNumber: { type: ["string", "null"] }
+        dateOfBirth: { type: ["string", "null"] }
+
+    SavedPassengerInput:
+      type: object
+      required: [fullName, email, phone]
+      properties:
+        fullName: { type: string, minLength: 1 }
+        email: { type: string, minLength: 1 }
+        phone: { type: string, minLength: 1 }
+        passportNumber: { type: string }
+        dateOfBirth: { type: string }
+
+    PaymentMethod:
+      type: object
+      required: [id, customerId, cardBrand, last4, expiryMonth, expiryYear, cardholderName]
+      properties:
+        id: { type: integer }
+        customerId: { type: integer }
+        cardBrand: { type: string }
+        last4: { type: string }
+        expiryMonth: { type: integer }
+        expiryYear: { type: integer }
+        cardholderName: { type: string }
+
+    PaymentMethodInput:
+      type: object
+      required: [cardBrand, cardNumber, expiryMonth, expiryYear, cardholderName]
+      properties:
+        cardBrand: { type: string, minLength: 1 }
+        cardNumber: { type: string, minLength: 4 }
+        expiryMonth: { type: integer }
+        expiryYear: { type: integer }
+        cardholderName: { type: string, minLength: 1 }
+
+    WishlistItem:
+      type: object
+      required: [id, customerId, flight]
+      properties:
+        id: { type: integer }
+        customerId: { type: integer }
+        flight: { $ref: "#/components/schemas/Flight" }
+
+    WishlistInput:
+      type: object
+      required: [flightId]
+      properties:
+        flightId: { type: integer }
+
+    Notification:
+      type: object
+      required: [id, customerId, title, message, isRead, createdAt]
+      properties:
+        id: { type: integer }
+        customerId: { type: integer }
+        title: { type: string }
+        message: { type: string }
+        isRead: { type: boolean }
+        createdAt: { type: string }
+
+    DashboardSummary:
+      type: object
+      required: [totalCustomers, totalFlights, totalBookings, totalRevenue, upcomingFlights, delayedFlights, cancelledFlights, confirmedBookings]
+      properties:
+        totalCustomers: { type: integer }
+        totalFlights: { type: integer }
+        totalBookings: { type: integer }
+        totalRevenue: { type: number }
+        upcomingFlights: { type: integer }
+        delayedFlights: { type: integer }
+        cancelledFlights: { type: integer }
+        confirmedBookings: { type: integer }
+
+    RevenuePoint:
+      type: object
+      required: [period, revenue, bookings]
+      properties:
+        period: { type: string }
+        revenue: { type: number }
+        bookings: { type: integer }
+
+    OccupancyPoint:
+      type: object
+      required: [flightId, departure, arrival, totalSeats, bookedSeats, occupancyRate]
+      properties:
+        flightId: { type: integer }
+        departure: { type: string }
+        arrival: { type: string }
+        totalSeats: { type: integer }
+        bookedSeats: { type: integer }
+        occupancyRate: { type: number }
+
+    TopCustomer:
+      type: object
+      required: [customerId, customerName, totalBookings, totalSpent]
+      properties:
+        customerId: { type: integer }
+        customerName: { type: string }
+        totalBookings: { type: integer }
+        totalSpent: { type: number }
+
+    TopFlight:
+      type: object
+      required: [flightId, departure, arrival, totalBookings]
+      properties:
+        flightId: { type: integer }
+        departure: { type: string }
+        arrival: { type: string }
+        totalBookings: { type: integer }
+
+    AirlineComparison:
+      type: object
+      required: [airlineId, airlineName, totalFlights, totalBookings, totalRevenue, onTimeRate]
+      properties:
+        airlineId: { type: integer }
+        airlineName: { type: string }
+        totalFlights: { type: integer }
+        totalBookings: { type: integer }
+        totalRevenue: { type: number }
+        onTimeRate: { type: number }
+
+    ActivityEvent:
+      type: object
+      required: [id, type, message, createdAt]
+      properties:
+        id: { type: integer }
+        type: { type: string }
+        message: { type: string }
+        createdAt: { type: string }
+
+    TriggerLog:
+      type: object
+      required: [id, triggerName, message, createdAt]
+      properties:
+        id: { type: integer }
+        triggerName: { type: string }
+        message: { type: string }
+        createdAt: { type: string }
+
+    ProcedureDefinition:
+      type: object
+      required: [name, label, description, params]
+      properties:
+        name: { type: string }
+        label: { type: string }
+        description: { type: string }
+        params:
+          type: array
+          items: { type: string }
+
+    ProcedureExecutionInput:
+      type: object
+      properties:
+        customerId: { type: integer }
+        flightId: { type: integer }
+        bookingDate: { type: string }
+        seatNumber: { type: string }
+        cabinClass: { type: string }
+        status: { type: string }
+        bookingId: { type: integer }
+
+    ProcedureExecutionResult:
+      type: object
+      required: [id, procedureName, success, output, createdAt]
+      properties:
+        id: { type: integer }
+        procedureName: { type: string }
+        success: { type: boolean }
+        output: { type: string }
+        createdAt: { type: string }
+
+    ConfirmedBookingRow:
+      type: object
+      required: [customerId, customerName, email, bookingId, departure, arrival, seatNumber, bookingDate]
+      properties:
+        customerId: { type: integer }
+        customerName: { type: string }
+        email: { type: string }
+        bookingId: { type: integer }
+        departure: { type: string }
+        arrival: { type: string }
+        seatNumber: { type: string }
+        bookingDate: { type: string }
+
+    OccupancySummaryRow:
+      type: object
+      required: [flightId, airlineName, departure, arrival, confirmedBookings]
+      properties:
+        flightId: { type: integer }
+        airlineName: { type: string }
+        departure: { type: string }
+        arrival: { type: string }
+        confirmedBookings: { type: integer }
+
+    QueryDefinition:
+      type: object
+      required: [id, label, description, category, sql]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        description: { type: string }
+        category: { type: string }
+        sql: { type: string }
+
+    QueryResult:
+      type: object
+      required: [id, columns, rows, rowCount, executedAt]
+      properties:
+        id: { type: string }
+        columns:
+          type: array
+          items: { type: string }
+        rows:
+          type: array
+          items: {}
+        rowCount: { type: integer }
+        executedAt: { type: string }
