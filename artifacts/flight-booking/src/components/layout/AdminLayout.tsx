@@ -1,13 +1,16 @@
 import { Link, useLocation } from "wouter";
 import { Plane, LayoutDashboard, PlaneTakeoff, Users, FileText, Database, LogOut, ArrowLeft } from "lucide-react";
-import { useClerk } from "@clerk/react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
-  const { signOut } = useClerk();
-  const { data: user } = useGetMe();
+  const [location, setLocation] = useLocation();
+  const { user, logout } = useAuth();
+
+  const handleSignOut = async () => {
+    await logout();
+    setLocation("/");
+  };
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
@@ -28,26 +31,26 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <span className="font-serif text-2xl font-bold tracking-tight text-white">SkyReserve<span className="text-xs align-top text-accent ml-1 uppercase tracking-widest">Admin</span></span>
           </Link>
           <div className="flex items-center gap-3">
-             <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center font-semibold text-accent">
-               {user?.name?.charAt(0) || 'A'}
-             </div>
-             <div>
-               <p className="text-sm font-medium text-white">{user?.name}</p>
-               <p className="text-xs text-white/50">{user?.email}</p>
-             </div>
+            <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center font-semibold text-accent">
+              {user?.name?.charAt(0) || 'A'}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">{user?.name}</p>
+              <p className="text-xs text-white/50">{user?.email}</p>
+            </div>
           </div>
         </div>
-        
+
         <nav className="flex-1 flex flex-col gap-1 p-4 overflow-y-auto">
           <div className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2 mt-2 px-2">Management</div>
           {navItems.map((item) => (
-            <Link 
-              key={item.href} 
+            <Link
+              key={item.href}
               href={item.href}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                location === item.href 
-                  ? "bg-accent/20 text-accent" 
+                location === item.href
+                  ? "bg-accent/20 text-accent"
                   : "text-white/70 hover:bg-white/5 hover:text-white"
               )}
             >
@@ -56,14 +59,14 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
-        
+
         <div className="p-4 border-t border-white/10 flex flex-col gap-2">
           <Link href="/app" className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white transition-colors">
             <ArrowLeft className="h-5 w-5" />
             Exit to App
           </Link>
-          <button 
-            onClick={() => signOut({ redirectUrl: "/" })} 
+          <button
+            onClick={handleSignOut}
             className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-red-400 hover:bg-red-400/10 transition-colors w-full text-left"
           >
             <LogOut className="h-5 w-5" />

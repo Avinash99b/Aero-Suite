@@ -12,6 +12,7 @@ import {
   notificationsTable,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
+import bcrypt from "bcryptjs";
 
 const CABIN_LAYOUT: { cabinClass: string; rows: number; letters: string[] }[] = [
   { cabinClass: "business", rows: 4, letters: ["A", "C", "D", "F"] },
@@ -106,6 +107,7 @@ async function main() {
   }
 
   logger.info("Seeding customers...");
+  const defaultPasswordHash = await bcrypt.hash("Password123!", 12);
   const customerNames = [
     ["Amara Okafor", "amara.okafor@example.com"],
     ["Liam Chen", "liam.chen@example.com"],
@@ -121,9 +123,9 @@ async function main() {
     const [c] = await db
       .insert(customersTable)
       .values({
-        clerkUserId: `seed_${email}`,
         name,
         email,
+        passwordHash: defaultPasswordHash,
         phone: "+1-555-0100",
         role: "customer",
       })
@@ -204,6 +206,7 @@ async function main() {
   // Promote the first seeded customer to admin so there's always a way in.
   await db.update(customersTable).set({ role: "admin" }).where(eq(customersTable.id, customers[0].id));
   logger.info({ adminEmail: customers[0].email }, "Promoted seed customer to admin");
+  logger.info("Seed user password: Password123!");
 
   logger.info("Done seeding.");
 }

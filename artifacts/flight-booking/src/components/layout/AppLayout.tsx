@@ -1,15 +1,18 @@
 import { Link, useLocation } from "wouter";
 import { Plane, Home, Search, BookOpen, Heart, Bell, User, LayoutDashboard, LogOut } from "lucide-react";
-import { useClerk } from "@clerk/react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
-  const { signOut } = useClerk();
-  const { data: user } = useGetMe();
+  const [location, setLocation] = useLocation();
+  const { user, logout } = useAuth();
+
+  const handleSignOut = async () => {
+    await logout();
+    setLocation("/");
+  };
 
   const navItems = [
     { icon: Home, label: "Home", href: "/app" },
@@ -28,16 +31,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Plane className="h-8 w-8 text-primary" />
             <span className="font-serif text-2xl font-bold text-primary tracking-tight">SkyReserve</span>
           </Link>
-          
+
           <nav className="flex flex-col gap-2">
             {navItems.map((item) => (
-              <Link 
-                key={item.href} 
+              <Link
+                key={item.href}
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors",
-                  location === item.href 
-                    ? "bg-primary text-primary-foreground shadow-sm" 
+                  location === item.href
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
                 )}
               >
@@ -47,7 +50,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
         </div>
-        
+
         <div className="mt-auto p-6 border-t border-border">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -80,7 +83,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/" })} className="text-destructive focus:bg-destructive/10 cursor-pointer">
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:bg-destructive/10 cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </DropdownMenuItem>
@@ -106,7 +109,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <DropdownMenuItem asChild><Link href="/app/profile">Profile</Link></DropdownMenuItem>
             {user?.role === 'admin' && <DropdownMenuItem asChild><Link href="/admin">Admin</Link></DropdownMenuItem>}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => signOut({ redirectUrl: "/" })}>Sign Out</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut} className="text-destructive">Sign Out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
@@ -120,8 +123,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             { icon: BookOpen, href: "/app/bookings" },
             { icon: Bell, href: "/app/notifications" },
           ].map((item) => (
-            <Link 
-              key={item.href} 
+            <Link
+              key={item.href}
               href={item.href}
               className={cn(
                 "p-3 rounded-full transition-colors flex items-center justify-center",
