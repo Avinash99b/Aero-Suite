@@ -84,12 +84,19 @@ router.delete("/customers/:id", requireAuth, requireAdmin, async (req, res): Pro
   res.sendStatus(204);
 });
 
-router.get("/customers/:id/bookings", requireAuth, requireAdmin, async (req, res): Promise<void> => {
+router.get("/customers/:id/bookings", requireAuth, async (req, res): Promise<void> => {
   const params = GetCustomerBookingsParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
+
+  const isAdmin = req.customer!.role === "admin";
+  if (!isAdmin && req.customer!.id !== params.data.id) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
   const [customer] = await db.select().from(customersTable).where(eq(customersTable.id, params.data.id));
   if (!customer) {
     res.status(404).json({ error: "Customer not found" });
