@@ -184,6 +184,59 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
   }
 });
 
+router.post("/auth/check-email", async (req, res): Promise<void> => {
+  const { email } = req.body ?? {};
+  if (!email) {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+  try {
+    const [customer] = await db
+      .select({ id: customersTable.id })
+      .from(customersTable)
+      .where(eq(customersTable.email, email.toLowerCase().trim()));
+    if (!customer) {
+      res.status(404).json({ error: "No account found with that email address." });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, "Check email error");
+    res.status(500).json({ error: "Could not process request" });
+  }
+});
+
+router.post("/auth/reset-password-direct", async (req, res): Promise<void> => {
+  const { email, newPassword } = req.body ?? {};
+  if (!email || !newPassword) {
+    res.status(400).json({ error: "Email and new password are required" });
+    return;
+  }
+  if (typeof newPassword !== "string" || newPassword.length < 8) {
+    res.status(400).json({ error: "Password must be at least 8 characters" });
+    return;
+  }
+  try {
+    const [customer] = await db
+      .select({ id: customersTable.id })
+      .from(customersTable)
+      .where(eq(customersTable.email, email.toLowerCase().trim()));
+    if (!customer) {
+      res.status(404).json({ error: "No account found with that email address." });
+      return;
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await db
+      .update(customersTable)
+      .set({ passwordHash, resetToken: null, resetTokenExpiresAt: null })
+      .where(eq(customersTable.id, customer.id));
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, "Reset password direct error");
+    res.status(500).json({ error: "Could not reset password" });
+  }
+});
+
 router.patch("/auth/change-password", requireAuth, async (req, res): Promise<void> => {
   const { currentPassword, newPassword } = req.body ?? {};
 
