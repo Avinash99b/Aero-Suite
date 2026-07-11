@@ -407,7 +407,7 @@ export default function FlightDetail() {
                         <Button variant="ghost" onClick={() => setStep("seats")}>Back</Button>
                         <Button
                           size="lg"
-                          disabled={!passengerInfo.name || !passengerInfo.email}
+                          disabled={!passengerInfo.name || !passengerInfo.email || !passengerInfo.phone}
                           onClick={() => setStep("payment")}
                         >
                           Continue to Confirmation <ChevronRight className="ml-2 h-4 w-4" />

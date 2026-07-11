@@ -35,7 +35,16 @@ app.use(
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
-app.use(cors({ credentials: true, origin: true }));
+// CORS_ORIGIN lets standalone Docker deployments (frontend and backend on
+// different origins/ports) restrict allowed origins via an env var. Comma-
+// separated list, or unset/"*" to reflect any origin (default — matches the
+// same-origin Replit path-routed deployment where this is a no-op).
+const corsOrigin = process.env.CORS_ORIGIN;
+const corsOptions =
+  corsOrigin && corsOrigin !== "*"
+    ? corsOrigin.split(",").map((o) => o.trim())
+    : true;
+app.use(cors({ credentials: true, origin: corsOptions }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

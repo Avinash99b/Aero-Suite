@@ -16,6 +16,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Runtime config: populated by the Docker/nginx entrypoint from container env vars.
+         Falls back to an empty object in dev, where Vite build-time env vars are used instead. -->
+    <script src="/config.js"></script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,0 +1,41 @@
+# Standalone Docker deployment of SkyReserve (outside Replit).
+# Requires a reachable Postgres instance (not included here) — point
+# DATABASE_URL at it, or add your own `db` service.
+#
+# Usage:
+#   cp .env.docker.example .env.docker
+#   # fill in DATABASE_URL, CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY
+#   docker compose --env-file .env.docker up --build
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      PORT: "8080"
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+      CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: artifacts/flight-booking/Dockerfile
+    ports:
+      - "${WEB_PORT:-8081}:8080"
+    environment:
+      PORT: "8080"
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:${API_PORT:-8080}}
+      CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY}
+      CLERK_PROXY_URL: ${CLERK_PROXY_URL:-}
+    depends_on:
+      - api
+    restart: unless-stopped

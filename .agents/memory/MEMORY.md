@@ -1,0 +1,2 @@
+- [Design-subagent theme placeholders](theme-placeholder-colors.md) — check index.css for literal `red /*replace with H S L */` left unfilled; breaks every Card/Popover/etc. silently.
+- [Runtime env for Dockerized Vite/Express apps](docker-runtime-env.md) — pattern for making a pre-built static frontend + esbuild-bundled backend reconfigurable via plain env vars at container start.

@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/.turbo
+**/.cache
+.git
+.local
+.agents
+attached_assets
+screenshots
+tmp
+*.log
+.env
+.env.*
+!.env.example

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
@@ -36,12 +37,17 @@ const queryClient = new QueryClient({
   },
 });
 
+// Runtime env (see public/config.js) takes precedence so a standalone Docker
+// deployment can be reconfigured without rebuilding the static bundle;
+// falls back to the build-time Vite env vars used in dev / Replit deploys.
+const runtimeEnv = (window as any).__ENV__ ?? {};
+
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+  runtimeEnv.CLERK_PUBLISHABLE_KEY || import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
 );
 
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const clerkProxyUrl = runtimeEnv.CLERK_PROXY_URL || import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function stripBase(path: string): string {
@@ -76,7 +82,7 @@ const clerkAppearance = {
   },
   elements: {
     rootBox: "w-full flex justify-center",
-    cardBox: "bg-card rounded-2xl w-[440px] max-w-full overflow-hidden shadow-xl border border-border",
+    cardBox: "!bg-transparent w-full max-w-full !shadow-none !border-0 !rounded-none",
     card: "!shadow-none !border-0 !bg-transparent !rounded-none",
     footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
     headerTitle: "font-serif text-2xl font-semibold text-primary",
@@ -103,71 +109,70 @@ const clerkAppearance = {
   },
 };
 
-function SignInPage() {
-  // 0 = fully transparent, 1 = fully opaque
-  const formBackgroundOpacity = 0.18;
-
+function AuthBackdrop() {
   return (
     <div
-      className="relative flex min-h-[100dvh] items-center justify-center px-4 bg-cover bg-center"
+      className="fixed inset-0 -z-10 overflow-hidden bg-[#0a1628] bg-cover bg-center"
       style={{
         backgroundImage:
           "url('https://images.unsplash.com/photo-1542296332-2e4473faf563?auto=format&fit=crop&q=80')",
       }}
     >
-      {/* Background overlay */}
-      <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
-
-      {/* Sign In Form */}
-      <div className="relative z-10 w-full max-w-md">
-        <div
-          className="rounded-2xl border border-white/20 shadow-2xl backdrop-blur-xl"
-          style={{
-            backgroundColor: `rgba(255, 255, 255, ${formBackgroundOpacity})`,
-          }}
-        >
-          <SignIn
-            routing="path"
-            path={`${basePath}/sign-in`}
-            signUpUrl={`${basePath}/sign-up`}
-          />
-        </div>
-      </div>
+      <div className="absolute inset-0 bg-[#0a1628]/70" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628]/80 via-[#0a1628]/60 to-black/70" />
+      <motion.div
+        className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/25 blur-3xl"
+        animate={{ x: [0, 40, 0], y: [0, 30, 0] }}
+        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute -bottom-32 -right-24 h-[28rem] w-[28rem] rounded-full bg-amber-400/15 blur-3xl"
+        animate={{ x: [0, -30, 0], y: [0, -20, 0] }}
+        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+      />
     </div>
   );
 }
 
-function SignUpPage() {
-  // 0 = fully transparent, 1 = fully opaque
-  const formBackgroundOpacity = 0.18;
-
+function AuthCard({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="relative flex min-h-[100dvh] items-center justify-center px-4 bg-cover bg-center"
-      style={{
-        backgroundImage:
-          "url('https://images.unsplash.com/photo-1542296332-2e4473faf563?auto=format&fit=crop&q=80')",
-      }}
-    >
-      {/* Background overlay */}
-      <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" />
-
-      {/* Sign Up Form */}
-      <div className="relative z-10 w-full max-w-md">
-        <div
-          className="rounded-2xl border border-white/20 shadow-2xl backdrop-blur-xl"
-          style={{
-            backgroundColor: `rgba(255, 255, 255, ${formBackgroundOpacity})`,
-          }}
-        >
-          <SignUp
-            routing="path"
-            path={`${basePath}/sign-up`}
-            signInUrl={`${basePath}/sign-in`}
-          />
+    <div className="relative flex min-h-[100dvh] items-center justify-center px-4 py-10">
+      <AuthBackdrop />
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 w-full max-w-[440px]"
+      >
+        <div className="overflow-hidden rounded-3xl border border-white/15 bg-card shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)]">
+          {children}
         </div>
-      </div>
+      </motion.div>
     </div>
+  );
+}
+
+function SignInPage() {
+  return (
+    <AuthCard>
+      <SignIn
+        routing="path"
+        path={`${basePath}/sign-in`}
+        signUpUrl={`${basePath}/sign-up`}
+      />
+    </AuthCard>
+  );
+}
+
+function SignUpPage() {
+  return (
+    <AuthCard>
+      <SignUp
+        routing="path"
+        path={`${basePath}/sign-up`}
+        signInUrl={`${basePath}/sign-in`}
+      />
+    </AuthCard>
   );
 }
 
