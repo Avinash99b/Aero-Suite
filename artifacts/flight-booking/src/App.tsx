@@ -77,6 +77,10 @@ const clerkAppearance = {
     colorInput: "hsl(45 20% 88%)",
     colorInputForeground: "hsl(220 30% 15%)",
     colorNeutral: "hsl(45 20% 88%)",
+    // Text drawn on top of colorPrimary (e.g. the "Continue" submit button) —
+    // without this it defaults close to colorPrimary itself and becomes
+    // unreadable against the dark navy button background.
+    colorTextOnPrimaryBackground: "hsl(45 40% 98%)",
     fontFamily: "'Outfit', sans-serif",
     borderRadius: "0.5rem",
   },
@@ -98,7 +102,7 @@ const clerkAppearance = {
     logoBox: "mb-6 flex justify-center",
     logoImage: "h-12 w-auto",
     socialButtonsBlockButton: "border-border hover:bg-accent/10 transition-colors",
-    formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 transition-colors h-11",
+    formButtonPrimary: "bg-primary !text-primary-foreground hover:bg-primary/90 transition-colors h-11",
     formFieldInput: "bg-background border-border h-11 px-3 py-2 rounded-md focus:ring-2 focus:ring-ring focus:border-ring",
     footerAction: "bg-muted/30 py-6 border-t border-border/50",
     dividerLine: "bg-border",
