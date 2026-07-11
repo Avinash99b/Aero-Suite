@@ -13,6 +13,8 @@
 #     -e SESSION_SECRET="change-me-in-production" \
 #     skyreserve
 #
+# On first run, add -e SEED=true to populate the database with demo data.
+#
 # The app is then available at http://localhost:3000
 # API calls to /api/... are forwarded internally to port 3001.
 
@@ -21,6 +23,12 @@
 # so Alpine (musl libc) would fail to find the rollup native binary.
 # Debian uses glibc, which matches the lockfile's expected platform.
 FROM node:24-slim
+
+# postgresql-client provides psql, used in the entrypoint to apply
+# procedures.sql / triggers.sql / views.sql against DATABASE_URL.
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends postgresql-client && \
+    rm -rf /var/lib/apt/lists/*
 
 # Enable corepack so pnpm is available
 RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
@@ -45,6 +53,8 @@ RUN pnpm install --frozen-lockfile
 COPY lib ./lib
 COPY artifacts/api-server ./artifacts/api-server
 COPY artifacts/flight-booking ./artifacts/flight-booking
+COPY artifacts/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 # ── Ports ──────────────────────────────────────────────────────────────────
 # API_PORT  internal Express server (never exposed outside the container)
@@ -54,12 +64,11 @@ ENV PORT=3000
 ENV BASE_PATH=/
 ENV NODE_ENV=development
 
-# ── Required at runtime (pass with -e) ────────────────────────────────────
-# DATABASE_URL   postgresql connection string
-# SESSION_SECRET random secret for JWT signing (min 32 chars recommended)
+# ── Runtime env vars (pass with -e) ───────────────────────────────────────
+# DATABASE_URL   postgresql connection string          (required)
+# SESSION_SECRET random secret for JWT signing         (required)
+# SEED=true      seed demo data on first start         (optional)
 
 EXPOSE 3000
 
-# Start both services concurrently.
-# Vite proxies /api/* → Express on API_PORT (set in vite.config.ts).
-CMD ["sh", "-c", "PORT=$API_PORT pnpm --filter @workspace/api-server run dev & PORT=$PORT BASE_PATH=$BASE_PATH API_PORT=$API_PORT pnpm --filter @workspace/flight-booking run dev & wait"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
