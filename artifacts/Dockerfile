@@ -16,15 +16,20 @@
 # The app is then available at http://localhost:3000
 # API calls to /api/... are forwarded internally to port 3001.
 
-FROM node:24-alpine
+# node:24-slim (Debian/glibc) — NOT alpine.
+# The pnpm-workspace.yaml excludes @rollup/rollup-linux-x64-musl ('-'),
+# so Alpine (musl libc) would fail to find the rollup native binary.
+# Debian uses glibc, which matches the lockfile's expected platform.
+FROM node:24-slim
 
 # Enable corepack so pnpm is available
 RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 
 WORKDIR /app
 
-# Copy manifests first for better layer caching
+# ── Manifests first — changes here bust the install cache ─────────────────
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* .npmrc* ./
+COPY tsconfig.base.json tsconfig.json ./
 COPY lib/package.json* ./lib/
 COPY lib/db/package.json ./lib/db/
 COPY lib/api-zod/package.json ./lib/api-zod/
@@ -36,13 +41,13 @@ COPY artifacts/flight-booking/package.json ./artifacts/flight-booking/
 # Install all workspace dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy the full source (after install so the layer above is cached)
+# ── Source (after install so the layer above stays cached on dep changes) ──
 COPY lib ./lib
 COPY artifacts/api-server ./artifacts/api-server
 COPY artifacts/flight-booking ./artifacts/flight-booking
 
 # ── Ports ──────────────────────────────────────────────────────────────────
-# API_PORT  internal Express server (not exposed outside the container)
+# API_PORT  internal Express server (never exposed outside the container)
 # PORT      Vite dev server, exposed to the host
 ENV API_PORT=3001
 ENV PORT=3000
@@ -55,10 +60,6 @@ ENV NODE_ENV=development
 
 EXPOSE 3000
 
-# Start both services; Vite proxies /api → Express via API_PORT
-CMD sh -c '\
-  PORT=$API_PORT pnpm --filter @workspace/api-server run dev & \
-  PORT=$PORT BASE_PATH=$BASE_PATH API_PORT=$API_PORT \
-    pnpm --filter @workspace/flight-booking run dev & \
-  wait \
-'
+# Start both services concurrently.
+# Vite proxies /api/* → Express on API_PORT (set in vite.config.ts).
+CMD ["sh", "-c", "PORT=$API_PORT pnpm --filter @workspace/api-server run dev & PORT=$PORT BASE_PATH=$BASE_PATH API_PORT=$API_PORT pnpm --filter @workspace/flight-booking run dev & wait"]
